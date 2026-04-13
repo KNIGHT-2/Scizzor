@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: scizzor_db
+    environment:
+      POSTGRES_USER: scizzor_user
+      POSTGRES_PASSWORD: scizzor_pass
+      POSTGRES_DB: scizzor_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - scizzor_pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scizzor_backend
+    ports:
+      - "8081:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: scizzor_user
+      DB_PASS: scizzor_pass
+      DB_NAME: scizzor_db
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: scizzor_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+volumes:
+  scizzor_pgdata:
