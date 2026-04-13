@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../api.service';
 import { CommonModule } from '@angular/common';
@@ -247,27 +247,19 @@ export class DashboardComponent implements OnInit {
   isAdding = false;
   message = '';
   messageType: 'success' | 'error' = 'success';
-  private _lastTab = 'services';
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(private api: ApiService, private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.loadItems();
   }
 
-  ngDoCheck() {
-    if (this._lastTab !== this.activeTab) {
-      this._lastTab = this.activeTab;
+  setTab(tab: 'services' | 'products') {
+    if (this.activeTab !== tab) {
+      this.activeTab = tab;
       this.message = '';
       this.loadItems();
     }
-  }
-
-  setTab(tab: 'services' | 'products') {
-    this.activeTab = tab;
-    this.message = '';
-    // Impedimos o comportamento padrão do link
-    return false; 
   }
 
   loadItems() {
@@ -277,6 +269,7 @@ export class DashboardComponent implements OnInit {
       next: (data: any[]) => {
         this.items = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.isLoading = false;
@@ -285,6 +278,7 @@ export class DashboardComponent implements OnInit {
         } else {
           this.showMessage('Erro ao carregar itens.', 'error');
         }
+        this.cdr.detectChanges();
       }
     };
 
@@ -322,11 +316,13 @@ export class DashboardComponent implements OnInit {
         this.newItem = { name: '', price: null };
         this.showMessage('Item adicionado com sucesso!', 'success');
         this.loadItems();
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.isAdding = false;
         const errMsg = err.error?.message || 'Erro ao adicionar item. Verifique sua conexão.';
         this.showMessage(errMsg, 'error');
+        this.cdr.detectChanges();
       }
     };
 
