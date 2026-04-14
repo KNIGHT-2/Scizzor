@@ -78,6 +78,20 @@ import { FormsModule } from '@angular/forms';
           </div>
         </section>
       </main>
+
+      <!-- Modal de Confirmação de Exclusão -->
+      <div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Confirmar Exclusão</h3>
+          </div>
+          <p>Deseja realmente apagar <strong>"{{ itemToDelete?.name }}"</strong>?</p>
+          <div class="modal-footer">
+            <button class="outline" (click)="cancelDelete()">Cancelar</button>
+            <button class="delete-confirm-btn" (click)="confirmDelete()">Excluir Permanentemente</button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -237,6 +251,60 @@ import { FormsModule } from '@angular/forms';
       border-radius: 8px;
       border: 1px dashed #ccc;
     }
+    
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .modal-content {
+      background: white;
+      padding: 32px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-header h3 {
+      margin: 0 0 16px 0;
+      font-size: 1.25rem;
+    }
+    .modal-content p {
+      color: #666;
+      margin-bottom: 32px;
+    }
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .delete-confirm-btn {
+      background-color: #000;
+      color: #fff;
+    }
+    .delete-confirm-btn:hover {
+      background-color: #d32f2f;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleUp {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -247,6 +315,8 @@ export class DashboardComponent implements OnInit {
   isAdding = false;
   message = '';
   messageType: 'success' | 'error' = 'success';
+  showDeleteModal = false;
+  itemToDelete: any = null;
 
   constructor(private api: ApiService, private router: Router, private cdr: ChangeDetectorRef) {}
 
@@ -382,16 +452,31 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteItem(id: number, item: any) {
-    // id is passed as first arg in previous code, but item.id is more reliable
-    const itemId = id || item.id;
-    if (!confirm(`Deseja realmente apagar "${item.name}"?`)) return;
-    
+    this.itemToDelete = { ...item, id: id || item.id };
+    this.showDeleteModal = true;
+  }
+
+  cancelDelete() {
+    this.showDeleteModal = false;
+    this.itemToDelete = null;
+  }
+
+  confirmDelete() {
+    if (!this.itemToDelete) return;
+
+    const itemId = this.itemToDelete.id;
     const observer = {
       next: () => {
         this.showMessage('Item excluído!', 'success');
+        this.showDeleteModal = false;
+        this.itemToDelete = null;
         this.loadItems();
       },
-      error: () => this.showMessage('Erro ao excluir item.', 'error')
+      error: () => {
+        this.showMessage('Erro ao excluir item.', 'error');
+        this.showDeleteModal = false;
+        this.itemToDelete = null;
+      }
     };
 
     if (this.activeTab === 'services') {
