@@ -13,10 +13,11 @@ import { CommonModule } from '@angular/common';
       <div class="card auth-card">
         <div class="auth-header">
           <img src="/assets/logo.png" alt="Scizzor Logo" class="logo-img">
-          <h2>Crie sua conta</h2>
+          <h2 *ngIf="!isSuccess">Crie sua conta</h2>
+          <h2 *ngIf="isSuccess">Sucesso!</h2>
         </div>
         
-        <form (ngSubmit)="onSubmit()">
+        <form *ngIf="!isSuccess" (ngSubmit)="onSubmit()">
           <label for="name">Nome do Estabelecimento</label>
           <input type="text" id="name" [(ngModel)]="name" name="name" required>
 
@@ -33,8 +34,15 @@ import { CommonModule } from '@angular/common';
           
           <button type="submit" style="width: 100%">Cadastrar</button>
         </form>
+
+        <div *ngIf="isSuccess" class="success-container">
+          <div class="success-icon">✓</div>
+          <p>Cadastro realizado com sucesso!</p>
+          <p class="sub-text">Agora você pode acessar sua conta.</p>
+          <button routerLink="/login" style="width: 100%; margin-top: 24px;">Ir para Login</button>
+        </div>
         
-        <div class="auth-footer">
+        <div class="auth-footer" *ngIf="!isSuccess">
           <p>Já possui conta? <a routerLink="/login">Entrar</a></p>
         </div>
       </div>
@@ -73,10 +81,33 @@ import { CommonModule } from '@angular/common';
       font-size: 0.9rem;
       margin-bottom: 16px;
     }
+    .success-container {
+      text-align: center;
+      animation: fadeIn 0.5s ease-out;
+    }
+    .success-icon {
+      font-size: 3rem;
+      color: #000;
+      margin-bottom: 16px;
+    }
+    .success-container p {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    .sub-text {
+      color: #666;
+      font-weight: 400 !important;
+      font-size: 0.9rem !important;
+      margin-top: 8px;
+    }
     .auth-footer {
       margin-top: 24px;
       text-align: center;
       font-size: 0.9rem;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   `]
 })
@@ -86,6 +117,7 @@ export class RegisterComponent {
   email = '';
   password = '';
   error = '';
+  isSuccess = false;
 
   constructor(private api: ApiService, private router: Router) {}
 
@@ -97,8 +129,7 @@ export class RegisterComponent {
       password: this.password 
     }).subscribe({
       next: () => {
-        alert('Cadastro realizado com sucesso! Faça login.');
-        this.router.navigate(['/login']);
+        this.isSuccess = true;
       },
       error: (err) => {
         this.error = 'Erro: ' + (err.error?.message || 'Não foi possível cadastrar');
