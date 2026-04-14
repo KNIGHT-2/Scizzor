@@ -38,7 +38,7 @@ import { FormsModule } from '@angular/forms';
               <label>Preço</label>
               <div class="price-input-wrapper">
                 <span class="currency-prefix">R$</span>
-                <input type="number" [(ngModel)]="newItem.price" placeholder="0,00" step="0.01" [disabled]="isAdding" (keyup.enter)="addItem()">
+                <input type="text" [(ngModel)]="newItem.price" placeholder="0,00" [disabled]="isAdding" (keyup.enter)="addItem()">
               </div>
             </div>
             <button class="add-btn" (click)="addItem()" [disabled]="isAdding">
@@ -58,12 +58,12 @@ import { FormsModule } from '@angular/forms';
           <div class="card item-card" *ngFor="let item of items">
             <div *ngIf="!item.isEditing" class="item-info">
               <h3>{{ item.name }}</h3>
-              <p>R$ {{ item.price.toFixed(2) }}</p>
+              <p>R$ {{ item.price.toFixed(2).replace('.', ',') }}</p>
             </div>
             
             <div *ngIf="item.isEditing" class="item-edit">
               <input type="text" [(ngModel)]="item.editName">
-              <input type="number" [(ngModel)]="item.editPrice">
+              <input type="text" [(ngModel)]="item.editPrice" placeholder="0,00">
             </div>
 
             <div class="item-actions">
@@ -242,7 +242,7 @@ import { FormsModule } from '@angular/forms';
 export class DashboardComponent implements OnInit {
   activeTab: 'services' | 'products' = 'services';
   items: any[] = [];
-  newItem = { name: '', price: null as number | null };
+  newItem = { name: '', price: '' };
   isLoading = false;
   isAdding = false;
   message = '';
@@ -290,7 +290,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addItem() {
-    if (!this.newItem.name && this.newItem.price == null) {
+    if (!this.newItem.name && !this.newItem.price) {
       this.showMessage('Preencha os dados do item.', 'error');
       return;
     }
@@ -298,22 +298,34 @@ export class DashboardComponent implements OnInit {
       this.showMessage('O nome do item é obrigatório.', 'error');
       return;
     }
-    if (this.newItem.price == null) {
-      this.showMessage('O preço é obrigatório (use apenas números e ponto).', 'error');
+    if (!this.newItem.price) {
+      this.showMessage('O preço é obrigatório.', 'error');
       return;
     }
-    if (this.newItem.price <= 0) {
+
+    // Converte vírgula para ponto e remove espaços
+    const priceStr = String(this.newItem.price).replace(',', '.').trim();
+    const priceNum = parseFloat(priceStr);
+
+    if (isNaN(priceNum)) {
+      this.showMessage('Preço inválido. Use números e vírgulas ou pontos.', 'error');
+      return;
+    }
+    if (priceNum <= 0) {
       this.showMessage('O preço deve ser maior que zero.', 'error');
       return;
     }
 
+    // Prepara os dados para o envio
+    const itemToCreate = { ...this.newItem, price: priceNum };
+    
     this.isAdding = true;
     this.message = '';
     
     const observer = {
       next: () => {
         this.isAdding = false;
-        this.newItem = { name: '', price: null };
+        this.newItem = { name: '', price: '' };
         this.showMessage('Item adicionado com sucesso!', 'success');
         this.loadItems();
         this.cdr.detectChanges();
@@ -327,22 +339,32 @@ export class DashboardComponent implements OnInit {
     };
 
     if (this.activeTab === 'services') {
-      this.api.createService(this.newItem).subscribe(observer);
+      this.api.createService(itemToCreate).subscribe(observer);
     } else {
-      this.api.createProduct(this.newItem).subscribe(observer);
+      this.api.createProduct(itemToCreate).subscribe(observer);
     }
   }
 
   editItem(item: any) {
     item.isEditing = true;
     item.editName = item.name;
-    item.editPrice = item.price;
+    // Converte o preço numérico para string com vírgula para exibição no input de edição
+    item.editPrice = item.price.toString().replace('.', ',');
   }
 
   saveItem(item: any) {
-    if (!item.editName || item.editPrice == null) return;
+    if (!item.editName || !item.editPrice) return;
     
-    const data = { name: item.editName, price: item.editPrice };
+    // Converte vírgula para ponto e remove espaços
+    const priceStr = String(item.editPrice).replace(',', '.').trim();
+    const priceNum = parseFloat(priceStr);
+
+    if (isNaN(priceNum) || priceNum <= 0) {
+      this.showMessage('Preço inválido.', 'error');
+      return;
+    }
+
+    const data = { name: item.editName, price: priceNum };
     const observer = {
       next: () => {
         item.isEditing = false;
