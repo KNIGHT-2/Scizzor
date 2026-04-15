@@ -60,4 +60,13 @@ export class ApiService {
   deleteProduct(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/products/${id}`, { headers: this.getAuthHeaders() });
   }
+
+  // Profile
+  getProfile(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/profile`, { headers: this.getAuthHeaders() });
+  }
+
+  updateProfile(data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/profile`, data, { headers: this.getAuthHeaders() });
+  }
 }

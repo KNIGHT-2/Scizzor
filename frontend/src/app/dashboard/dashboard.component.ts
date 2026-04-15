@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
           <img src="/assets/logo.png" alt="Scizzor" class="logo-img">
         </div>
         <nav class="dash-nav">
+          <a href="#" [class.active]="activeTab === 'profile'" (click)="setTab('profile'); $event.preventDefault()">Meu Perfil</a>
           <a href="#" [class.active]="activeTab === 'services'" (click)="setTab('services'); $event.preventDefault()">Meus Serviços</a>
           <a href="#" [class.active]="activeTab === 'products'" (click)="setTab('products'); $event.preventDefault()">Meus Produtos</a>
         </nav>
@@ -25,10 +26,49 @@ import { FormsModule } from '@angular/forms';
       
       <main class="content">
         <header class="content-header">
-          <h1>{{ activeTab === 'services' ? 'Gerenciar Serviços' : 'Gerenciar Produtos' }}</h1>
+          <h1>{{ activeTab === 'services' ? 'Gerenciar Serviços' : (activeTab === 'products' ? 'Gerenciar Produtos' : 'Meu Perfil') }}</h1>
         </header>
 
-        <section class="card">
+        <!-- Profile Section -->
+        <section class="profile-section" *ngIf="activeTab === 'profile'">
+          <div class="card profile-card">
+            <div class="profile-form">
+              <div class="input-group">
+                <label>Nome do Estabelecimento</label>
+                <input type="text" [(ngModel)]="editProfileData.name" placeholder="Nome">
+              </div>
+              <div class="input-group">
+                <label>Username</label>
+                <input type="text" [(ngModel)]="editProfileData.username" placeholder="Username">
+              </div>
+              <div class="input-group">
+                <label>E-mail</label>
+                <input type="email" [(ngModel)]="editProfileData.email" placeholder="E-mail">
+              </div>
+              
+              <div class="divider"></div>
+              
+              <div class="input-group">
+                <label>Nova Senha (deixe em branco para não alterar)</label>
+                <input type="password" [(ngModel)]="editProfileData.newPassword" placeholder="••••••••">
+              </div>
+
+              <div class="profile-actions">
+                <button (click)="saveProfile()" [disabled]="isSavingProfile">
+                  {{ isSavingProfile ? 'Salvando...' : 'Salvar Alterações' }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="message && activeTab === 'profile'" [class.error-msg]="messageType === 'error'" [class.success-msg]="messageType === 'success'" class="status-msg">
+            <span *ngIf="messageType === 'error'">⚠️</span>
+            <span *ngIf="messageType === 'success'">✅</span>
+            {{ message }}
+          </div>
+        </section>
+
+        <!-- Services/Products Form Section -->
+        <section class="card" *ngIf="activeTab !== 'profile'">
           <div class="form-row">
             <div class="input-group">
               <label>Nome</label>
@@ -52,7 +92,7 @@ import { FormsModule } from '@angular/forms';
           </div>
         </section>
 
-        <section class="list-section">
+        <section class="list-section" *ngIf="activeTab !== 'profile'">
           <div class="loading-spinner" *ngIf="isLoading">Carregando itens...</div>
           
           <div class="card item-card" *ngFor="let item of items">
@@ -78,6 +118,26 @@ import { FormsModule } from '@angular/forms';
           </div>
         </section>
       </main>
+
+      <!-- Modal de Confirmação de Senha (Perfil) -->
+      <div class="modal-overlay" *ngIf="showConfirmPasswordModal" (click)="cancelProfileUpdate()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Confirmar Alterações</h3>
+          </div>
+          <p>Para salvar as alterações no seu perfil, por favor confirme sua <strong>senha atual</strong>.</p>
+          <div class="input-group">
+            <label>Senha Atual</label>
+            <input type="password" [(ngModel)]="currentPasswordConfirm" (keyup.enter)="confirmProfileUpdate()" placeholder="Digite sua senha">
+          </div>
+          <div class="modal-footer" style="margin-top: 24px;">
+            <button class="outline" (click)="cancelProfileUpdate()">Cancelar</button>
+            <button class="add-btn" (click)="confirmProfileUpdate()" [disabled]="isSavingProfile">
+              {{ isSavingProfile ? 'Confirmando...' : 'Confirmar e Salvar' }}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Modal de Confirmação de Exclusão -->
       <div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
@@ -252,6 +312,29 @@ import { FormsModule } from '@angular/forms';
       border: 1px dashed #ccc;
     }
     
+    /* Profile Styles */
+    .profile-card {
+      max-width: 600px;
+      padding: 32px;
+    }
+    .profile-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .divider {
+      height: 1px;
+      background: #eee;
+      margin: 10px 0;
+    }
+    .profile-actions {
+      margin-top: 10px;
+    }
+    .profile-actions button {
+      width: 100%;
+      height: 48px;
+    }
+    
     /* Modal Styles */
     .modal-overlay {
       position: fixed;
@@ -308,7 +391,7 @@ import { FormsModule } from '@angular/forms';
   `]
 })
 export class DashboardComponent implements OnInit {
-  activeTab: 'services' | 'products' = 'services';
+  activeTab: 'profile' | 'services' | 'products' = 'services';
   items: any[] = [];
   newItem = { name: '', price: '' };
   isLoading = false;
@@ -318,18 +401,83 @@ export class DashboardComponent implements OnInit {
   showDeleteModal = false;
   itemToDelete: any = null;
 
+  // Profile Data
+  profileData = { name: '', username: '', email: '' };
+  editProfileData = { name: '', username: '', email: '', newPassword: '' };
+  isSavingProfile = false;
+  showConfirmPasswordModal = false;
+  currentPasswordConfirm = '';
+
   constructor(private api: ApiService, private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.loadItems();
   }
 
-  setTab(tab: 'services' | 'products') {
+  setTab(tab: 'profile' | 'services' | 'products') {
     if (this.activeTab !== tab) {
       this.activeTab = tab;
       this.message = '';
-      this.loadItems();
+      if (tab === 'profile') {
+        this.loadProfile();
+      } else {
+        this.loadItems();
+      }
     }
+  }
+
+  loadProfile() {
+    this.isLoading = true;
+    this.api.getProfile().subscribe({
+      next: (data) => {
+        this.profileData = { ...data };
+        this.editProfileData = { ...data, newPassword: '' };
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoading = false;
+        this.showMessage('Erro ao carregar perfil.', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  saveProfile() {
+    this.showConfirmPasswordModal = true;
+    this.currentPasswordConfirm = '';
+  }
+
+  confirmProfileUpdate() {
+    if (!this.currentPasswordConfirm) {
+      this.showMessage('A senha atual é obrigatória.', 'error');
+      return;
+    }
+
+    this.isSavingProfile = true;
+    const updateData = {
+      ...this.editProfileData,
+      currentPassword: this.currentPasswordConfirm
+    };
+
+    this.api.updateProfile(updateData).subscribe({
+      next: (res) => {
+        this.isSavingProfile = false;
+        this.showConfirmPasswordModal = false;
+        this.showMessage(res.message || 'Perfil atualizado!', 'success');
+        this.loadProfile(); // Recarrega os dados
+      },
+      error: (err) => {
+        this.isSavingProfile = false;
+        const errMsg = err.error?.message || 'Erro ao atualizar perfil.';
+        this.showMessage(errMsg, 'error');
+      }
+    });
+  }
+
+  cancelProfileUpdate() {
+    this.showConfirmPasswordModal = false;
+    this.currentPasswordConfirm = '';
   }
 
   loadItems() {
