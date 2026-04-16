@@ -45,11 +45,18 @@ public class EstablishmentController {
             est.setName(updateDto.getName());
         }
 
-        if (updateDto.getUsername() != null && !updateDto.getUsername().isBlank() && !updateDto.getUsername().equals(est.getUsername())) {
-            if (repository.existsByUsername(updateDto.getUsername())) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Este nome de usuário já está em uso."));
+        if (updateDto.getUsername() != null && !updateDto.getUsername().isBlank()) {
+            String newUsername = updateDto.getUsername();
+            if (newUsername.startsWith("@")) {
+                newUsername = newUsername.substring(1);
             }
-            est.setUsername(updateDto.getUsername());
+            
+            if (!newUsername.equals(est.getUsername())) {
+                if (repository.existsByUsername(newUsername)) {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Este nome de usuário já está em uso."));
+                }
+                est.setUsername(newUsername);
+            }
         }
 
         if (updateDto.getEmail() != null && !updateDto.getEmail().isBlank() && !updateDto.getEmail().equals(est.getEmail())) {

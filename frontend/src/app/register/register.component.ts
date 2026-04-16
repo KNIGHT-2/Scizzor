@@ -21,8 +21,11 @@ import { CommonModule } from '@angular/common';
           <label for="name">Nome do Estabelecimento</label>
           <input type="text" id="name" [(ngModel)]="name" name="name" required>
 
-          <label for="username">Username exclusivo (ex: \@meusalao)</label>
-          <input type="text" id="username" [(ngModel)]="username" name="username" required>
+          <label for="username">Username exclusivo</label>
+          <div class="username-input-wrapper">
+            <span class="user-prefix">@</span>
+            <input type="text" id="username" [(ngModel)]="username" name="username" required placeholder="meusalao">
+          </div>
           
           <label for="email">E-mail</label>
           <input type="email" id="email" [(ngModel)]="email" name="email" required>
@@ -105,6 +108,25 @@ import { CommonModule } from '@angular/common';
       text-align: center;
       font-size: 0.9rem;
     }
+    .username-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .user-prefix {
+      position: absolute;
+      left: 12px;
+      color: #999;
+      font-weight: 600;
+      pointer-events: none;
+      /* Ajuste fino para alinhar com o texto do input */
+      line-height: normal;
+    }
+    .username-input-wrapper input {
+      padding-left: 32px !important;
+      margin-bottom: 0 !important;
+    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -122,9 +144,12 @@ export class RegisterComponent {
   constructor(private api: ApiService, private router: Router) {}
 
   onSubmit() {
+    // Remove o "@" se o usuário tiver digitado, para salvar apenas o username limpo
+    const cleanUsername = this.username.startsWith('@') ? this.username.substring(1) : this.username;
+    
     this.api.register({ 
       name: this.name, 
-      username: this.username, 
+      username: cleanUsername, 
       email: this.email, 
       password: this.password 
     }).subscribe({

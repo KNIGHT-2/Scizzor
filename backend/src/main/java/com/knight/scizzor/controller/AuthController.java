@@ -48,7 +48,13 @@ public class AuthController {
 
         Establishment establishment = new Establishment();
         establishment.setName(registerDto.getName());
-        establishment.setUsername(registerDto.getUsername());
+        
+        String username = registerDto.getUsername();
+        if (username != null && username.startsWith("@")) {
+            username = username.substring(1);
+        }
+        establishment.setUsername(username);
+        
         establishment.setEmail(registerDto.getEmail());
         establishment.setPassword(passwordEncoder.encode(registerDto.getPassword()));
 

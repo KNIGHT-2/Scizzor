@@ -39,7 +39,10 @@ import { FormsModule } from '@angular/forms';
               </div>
               <div class="input-group">
                 <label>Username</label>
-                <input type="text" [(ngModel)]="editProfileData.username" placeholder="Username">
+                <div class="username-input-wrapper">
+                  <span class="user-prefix">@</span>
+                  <input type="text" [(ngModel)]="editProfileData.username" placeholder="meusalao">
+                </div>
               </div>
               <div class="input-group">
                 <label>E-mail</label>
@@ -322,6 +325,25 @@ import { FormsModule } from '@angular/forms';
       flex-direction: column;
       gap: 20px;
     }
+    .username-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 0; /* No dashboard o input-group já tem gap */
+    }
+    .user-prefix {
+      position: absolute;
+      left: 12px;
+      color: #999;
+      font-weight: 600;
+      pointer-events: none;
+      line-height: normal;
+    }
+    .username-input-wrapper input {
+      padding-left: 32px !important;
+      width: 100%;
+      margin-bottom: 0 !important;
+    }
     .divider {
       height: 1px;
       background: #eee;
@@ -455,8 +477,15 @@ export class DashboardComponent implements OnInit {
     }
 
     this.isSavingProfile = true;
+    
+    // Remove o "@" se o usuário tiver digitado, salvando apenas o username limpo no banco
+    const cleanUsername = this.editProfileData.username.startsWith('@') 
+      ? this.editProfileData.username.substring(1) 
+      : this.editProfileData.username;
+
     const updateData = {
       ...this.editProfileData,
+      username: cleanUsername,
       currentPassword: this.currentPasswordConfirm
     };
 
