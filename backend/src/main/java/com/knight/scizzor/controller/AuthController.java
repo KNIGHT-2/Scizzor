@@ -38,23 +38,31 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterDto registerDto) {
-        if (repository.existsByUsername(registerDto.getUsername())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Error: Username is already taken!"));
+        String username = registerDto.getUsername();
+        
+        if (username == null || username.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "O nome de usuário é obrigatório."));
+        }
+        
+        if (username.length() < 4 || username.length() > 35) {
+            return ResponseEntity.badRequest().body(Map.of("message", "O nome de usuário deve ter entre 4 e 35 caracteres."));
+        }
+        
+        if (username.startsWith("@")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "O nome de usuário não pode começar com '@'."));
         }
 
+        if (repository.existsByUsername(username)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Este nome de usuário já está em uso."));
+        }
+    
         if (repository.existsByEmail(registerDto.getEmail())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Error: Email is already in use!"));
+            return ResponseEntity.badRequest().body(Map.of("message", "Este e-mail já está em uso."));
         }
 
         Establishment establishment = new Establishment();
         establishment.setName(registerDto.getName());
-        
-        String username = registerDto.getUsername();
-        if (username != null && username.startsWith("@")) {
-            username = username.substring(1);
-        }
         establishment.setUsername(username);
-        
         establishment.setEmail(registerDto.getEmail());
         establishment.setPassword(passwordEncoder.encode(registerDto.getPassword()));
 
@@ -66,13 +74,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
-        );
+                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(loginDto.getEmail());
-        
+
         Establishment est = repository.findByEmail(loginDto.getEmail()).orElseThrow();
-        
+
         final String jwt = jwtUtil.generateToken(userDetails);
 
         Map<String, Object> response = new HashMap<>();

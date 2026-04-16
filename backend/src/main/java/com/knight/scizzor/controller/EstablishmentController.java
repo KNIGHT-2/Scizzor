@@ -47,8 +47,13 @@ public class EstablishmentController {
 
         if (updateDto.getUsername() != null && !updateDto.getUsername().isBlank()) {
             String newUsername = updateDto.getUsername();
+            
+            if (newUsername.length() < 4 || newUsername.length() > 35) {
+                return ResponseEntity.badRequest().body(Map.of("message", "O nome de usuário deve ter entre 4 e 35 caracteres."));
+            }
+            
             if (newUsername.startsWith("@")) {
-                newUsername = newUsername.substring(1);
+                return ResponseEntity.badRequest().body(Map.of("message", "O nome de usuário não pode começar com '@'."));
             }
             
             if (!newUsername.equals(est.getUsername())) {

@@ -144,12 +144,24 @@ export class RegisterComponent {
   constructor(private api: ApiService, private router: Router) {}
 
   onSubmit() {
-    // Remove o "@" se o usuário tiver digitado, para salvar apenas o username limpo
-    const cleanUsername = this.username.startsWith('@') ? this.username.substring(1) : this.username;
+    if (!this.username) {
+      this.error = 'O nome de usuário é obrigatório.';
+      return;
+    }
+
+    if (this.username.length < 4 || this.username.length > 35) {
+      this.error = 'O nome de usuário deve ter entre 4 e 35 caracteres.';
+      return;
+    }
+
+    if (this.username.startsWith('@')) {
+      this.error = 'O nome de usuário não pode começar com "@". O "@" já é adicionado automaticamente.';
+      return;
+    }
     
     this.api.register({ 
       name: this.name, 
-      username: cleanUsername, 
+      username: this.username, 
       email: this.email, 
       password: this.password 
     }).subscribe({

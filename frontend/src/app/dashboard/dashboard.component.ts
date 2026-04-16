@@ -478,14 +478,23 @@ export class DashboardComponent implements OnInit {
 
     this.isSavingProfile = true;
     
-    // Remove o "@" se o usuário tiver digitado, salvando apenas o username limpo no banco
-    const cleanUsername = this.editProfileData.username.startsWith('@') 
-      ? this.editProfileData.username.substring(1) 
-      : this.editProfileData.username;
+    const newUsername = this.editProfileData.username;
+    
+    if (newUsername && (newUsername.length < 4 || newUsername.length > 35)) {
+        this.showMessage('O nome de usuário deve ter entre 4 e 35 caracteres.', 'error');
+        this.isSavingProfile = false;
+        return;
+    }
+
+    if (newUsername && newUsername.startsWith('@')) {
+        this.showMessage('O nome de usuário não pode começar com "@".', 'error');
+        this.isSavingProfile = false;
+        return;
+    }
 
     const updateData = {
       ...this.editProfileData,
-      username: cleanUsername,
+      username: newUsername,
       currentPassword: this.currentPasswordConfirm
     };
 
