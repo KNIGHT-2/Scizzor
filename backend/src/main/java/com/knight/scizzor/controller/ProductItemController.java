@@ -34,11 +34,12 @@ public class ProductItemController {
     @GetMapping
     public ResponseEntity<List<ProductItem>> getAllProducts(Authentication authentication) {
         Establishment est = getEstablishment(authentication);
-        return ResponseEntity.ok(repository.findByEstablishment_Id(est.getId()));
+        return ResponseEntity.ok(repository.findByEstablishmentId(est.getId()));
     }
 
     @PostMapping
-    public ResponseEntity<ProductItem> createProduct(@Valid @RequestBody ItemDto itemDto, Authentication authentication) {
+    public ResponseEntity<ProductItem> createProduct(@Valid @RequestBody ItemDto itemDto,
+            Authentication authentication) {
         Establishment est = getEstablishment(authentication);
         ProductItem item = new ProductItem();
         item.setName(itemDto.getName());
@@ -49,7 +50,8 @@ public class ProductItemController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable Long id, @Valid @RequestBody ItemDto itemDto, Authentication authentication) {
+    public ResponseEntity<?> updateProduct(@PathVariable Long id, @Valid @RequestBody ItemDto itemDto,
+            Authentication authentication) {
         Establishment est = getEstablishment(authentication);
         Optional<ProductItem> optionalItem = repository.findById(id);
 
