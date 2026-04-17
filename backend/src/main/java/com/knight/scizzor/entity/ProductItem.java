@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
+@Table(name = "product_item")
 public class ProductItem {
 
     @Id
@@ -15,6 +16,9 @@ public class ProductItem {
 
     @Column(nullable = false)
     private Double price;
+
+    @Column(nullable = false)
+    private Integer quantity;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "establishment_id", nullable = false)
@@ -29,6 +33,9 @@ public class ProductItem {
 
     public Double getPrice() { return price; }
     public void setPrice(Double price) { this.price = price; }
+
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
 
     public Establishment getEstablishment() { return establishment; }
     public void setEstablishment(Establishment establishment) { this.establishment = establishment; }

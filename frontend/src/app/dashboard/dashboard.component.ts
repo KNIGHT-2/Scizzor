@@ -84,6 +84,10 @@ import { FormsModule } from '@angular/forms';
                 <input type="text" [(ngModel)]="newItem.price" placeholder="0,00" [disabled]="isAdding" (keyup.enter)="addItem()">
               </div>
             </div>
+            <div class="input-group" *ngIf="activeTab === 'products'" style="flex: 0 0 100px;">
+              <label>Quantidade</label>
+              <input type="number" [(ngModel)]="newItem.quantity" placeholder="0" [disabled]="isAdding" (keyup.enter)="addItem()">
+            </div>
             <button class="add-btn" (click)="addItem()" [disabled]="isAdding">
               {{ isAdding ? 'Adicionando...' : 'Adicionar' }}
             </button>
@@ -101,12 +105,13 @@ import { FormsModule } from '@angular/forms';
           <div class="card item-card" *ngFor="let item of items">
             <div *ngIf="!item.isEditing" class="item-info">
               <h3>{{ item.name }}</h3>
-              <p>R$ {{ item.price.toFixed(2).replace('.', ',') }}</p>
+              <p>R$ {{ item.price.toFixed(2).replace('.', ',') }} <span *ngIf="activeTab === 'products'" class="item-qty"> • {{ item.quantity }} unidades</span></p>
             </div>
             
             <div *ngIf="item.isEditing" class="item-edit">
               <input type="text" [(ngModel)]="item.editName">
               <input type="text" [(ngModel)]="item.editPrice" placeholder="0,00">
+              <input type="number" *ngIf="activeTab === 'products'" [(ngModel)]="item.editQuantity" placeholder="Qtd" style="flex: 0 0 80px;">
             </div>
 
             <div class="item-actions">
@@ -281,9 +286,13 @@ import { FormsModule } from '@angular/forms';
       margin: 4px 0 0 0;
     }
     .item-info h3 {
-      margin: 0;
       font-size: 1rem;
       color: #666;
+    }
+    .item-qty {
+      font-size: 0.9rem;
+      color: #999;
+      font-weight: normal;
     }
     .item-actions {
       display: flex;
@@ -415,7 +424,7 @@ import { FormsModule } from '@angular/forms';
 export class DashboardComponent implements OnInit {
   activeTab: 'profile' | 'services' | 'products' = 'services';
   items: any[] = [];
-  newItem = { name: '', price: '' };
+  newItem: any = { name: '', price: '', quantity: '' };
   isLoading = false;
   isAdding = false;
   message = '';
@@ -430,7 +439,7 @@ export class DashboardComponent implements OnInit {
   showConfirmPasswordModal = false;
   currentPasswordConfirm = '';
 
-  constructor(private api: ApiService, private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor(private api: ApiService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.loadItems();
@@ -477,19 +486,19 @@ export class DashboardComponent implements OnInit {
     }
 
     this.isSavingProfile = true;
-    
+
     const newUsername = this.editProfileData.username;
-    
+
     if (newUsername && (newUsername.length < 4 || newUsername.length > 35)) {
-        this.showMessage('O nome de usuário deve ter entre 4 e 35 caracteres.', 'error');
-        this.isSavingProfile = false;
-        return;
+      this.showMessage('O nome de usuário deve ter entre 4 e 35 caracteres.', 'error');
+      this.isSavingProfile = false;
+      return;
     }
 
     if (newUsername && newUsername.startsWith('@')) {
-        this.showMessage('O nome de usuário não pode começar com "@".', 'error');
-        this.isSavingProfile = false;
-        return;
+      this.showMessage('O nome de usuário não pode começar com "@".', 'error');
+      this.isSavingProfile = false;
+      return;
     }
 
     const updateData = {
@@ -540,7 +549,7 @@ export class DashboardComponent implements OnInit {
 
     if (this.activeTab === 'services') {
       this.api.getServices().subscribe(observer);
-    } else {
+    } else if (this.activeTab === 'products') {
       this.api.getProducts().subscribe(observer);
     }
   }
@@ -572,16 +581,23 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // Prepara os dados para o envio
-    const itemToCreate = { ...this.newItem, price: priceNum };
-    
+    // Prepara os dados para o envio de forma limpa
+    const itemToCreate: any = {
+      name: this.newItem.name,
+      price: priceNum
+    };
+
+    if (this.activeTab === 'products') {
+      itemToCreate.quantity = parseInt(String(this.newItem.quantity)) || 0;
+    }
+
     this.isAdding = true;
     this.message = '';
-    
+
     const observer = {
       next: () => {
         this.isAdding = false;
-        this.newItem = { name: '', price: '' };
+        this.newItem = { name: '', price: '', quantity: '' };
         this.showMessage('Item adicionado com sucesso!', 'success');
         this.loadItems();
         this.cdr.detectChanges();
@@ -606,21 +622,29 @@ export class DashboardComponent implements OnInit {
     item.editName = item.name;
     // Converte o preço numérico para string com vírgula para exibição no input de edição
     item.editPrice = item.price.toString().replace('.', ',');
+    if (this.activeTab === 'products') {
+      item.editQuantity = item.quantity;
+    }
   }
 
   saveItem(item: any) {
     if (!item.editName || !item.editPrice) return;
-    
+
     // Converte vírgula para ponto e remove espaços
     const priceStr = String(item.editPrice).replace(',', '.').trim();
     const priceNum = parseFloat(priceStr);
 
     if (isNaN(priceNum) || priceNum <= 0) {
-      this.showMessage('Preço inválido.', 'error');
       return;
     }
 
-    const data = { name: item.editName, price: priceNum };
+    const quantityNum = this.activeTab === 'products' ? parseInt(String(item.editQuantity)) || 0 : undefined;
+
+    const data: any = { name: item.editName, price: priceNum };
+    if (quantityNum !== undefined) {
+      data.quantity = quantityNum;
+    }
+
     const observer = {
       next: () => {
         item.isEditing = false;

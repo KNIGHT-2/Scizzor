@@ -8,6 +8,7 @@ import com.knight.scizzor.repository.ProductItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/products")
+@Transactional
 public class ProductItemController {
 
     @Autowired
@@ -32,7 +34,7 @@ public class ProductItemController {
     @GetMapping
     public ResponseEntity<List<ProductItem>> getAllProducts(Authentication authentication) {
         Establishment est = getEstablishment(authentication);
-        return ResponseEntity.ok(repository.findByEstablishmentId(est.getId()));
+        return ResponseEntity.ok(repository.findByEstablishment_Id(est.getId()));
     }
 
     @PostMapping
@@ -41,6 +43,7 @@ public class ProductItemController {
         ProductItem item = new ProductItem();
         item.setName(itemDto.getName());
         item.setPrice(itemDto.getPrice());
+        item.setQuantity(itemDto.getQuantity() != null ? itemDto.getQuantity() : 0);
         item.setEstablishment(est);
         return ResponseEntity.ok(repository.save(item));
     }
@@ -54,6 +57,9 @@ public class ProductItemController {
             ProductItem item = optionalItem.get();
             item.setName(itemDto.getName());
             item.setPrice(itemDto.getPrice());
+            if (itemDto.getQuantity() != null) {
+                item.setQuantity(itemDto.getQuantity());
+            }
             return ResponseEntity.ok(repository.save(item));
         }
         return ResponseEntity.status(403).body("Not authorized or not found.");
