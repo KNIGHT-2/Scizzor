@@ -69,4 +69,21 @@ export class ApiService {
   updateProfile(data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/profile`, data, { headers: this.getAuthHeaders() });
   }
+
+  // Sales
+  getSales(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/sales`, { headers: this.getAuthHeaders() });
+  }
+
+  createSale(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/sales`, data, { headers: this.getAuthHeaders() });
+  }
+
+  revertLastSale(type: string, itemId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/sales/revert/${type}/${itemId}`, { headers: this.getAuthHeaders() });
+  }
+
+  deleteSale(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/sales/${id}`, { headers: this.getAuthHeaders() });
+  }
 }
