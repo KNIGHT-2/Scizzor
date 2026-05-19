@@ -512,12 +512,21 @@ import { forkJoin } from 'rxjs';
       height: 42px;
     }
     .qty-control button {
-      background: #f5f5f5;
+      background: #000;
+      color: #fff;
       border: none;
       width: 32px;
       height: 100%;
       cursor: pointer;
       font-weight: bold;
+    }
+    .qty-control button:disabled {
+      background: #f5f5f5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .qty-control button:hover:not(:disabled) {
+      background: #333;
     }
     .qty-control input {
       width: 50px;
