@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -15,6 +16,8 @@ import { FormsModule } from '@angular/forms';
           <img src="/assets/logo.png" alt="Scizzor" class="logo-img">
         </div>
         <nav class="dash-nav">
+          <a href="#" [class.active]="activeTab === 'scizzor'" (click)="setTab('scizzor'); $event.preventDefault()">Meu Scizzor</a>
+          <a href="#" [class.active]="activeTab === 'sales'" (click)="setTab('sales'); $event.preventDefault()">Minhas Vendas</a>
           <a href="#" [class.active]="activeTab === 'profile'" (click)="setTab('profile'); $event.preventDefault()">Meu Perfil</a>
           <a href="#" [class.active]="activeTab === 'services'" (click)="setTab('services'); $event.preventDefault()">Meus Serviços</a>
           <a href="#" [class.active]="activeTab === 'products'" (click)="setTab('products'); $event.preventDefault()">Meus Produtos</a>
@@ -26,7 +29,7 @@ import { FormsModule } from '@angular/forms';
       
       <main class="content">
         <header class="content-header">
-          <h1>{{ activeTab === 'services' ? 'Gerenciar Serviços' : (activeTab === 'products' ? 'Gerenciar Produtos' : 'Meu Perfil') }}</h1>
+          <h1>{{ activeTab === 'scizzor' ? 'Meu Scizzor' : (activeTab === 'sales' ? 'Minhas Vendas' : (activeTab === 'services' ? 'Gerenciar Serviços' : (activeTab === 'products' ? 'Gerenciar Produtos' : 'Meu Perfil'))) }}</h1>
         </header>
 
         <!-- Profile Section -->
@@ -71,7 +74,7 @@ import { FormsModule } from '@angular/forms';
         </section>
 
         <!-- Services/Products Form Section -->
-        <section class="card" *ngIf="activeTab !== 'profile'">
+        <section class="card" *ngIf="activeTab === 'services' || activeTab === 'products'">
           <div class="form-row">
             <div class="input-group">
               <label>Nome</label>
@@ -99,7 +102,7 @@ import { FormsModule } from '@angular/forms';
           </div>
         </section>
 
-        <section class="list-section" *ngIf="activeTab !== 'profile'">
+        <section class="list-section" *ngIf="activeTab === 'services' || activeTab === 'products'">
           <div class="loading-spinner" *ngIf="isLoading">Carregando itens...</div>
           
           <div class="card item-card" *ngFor="let item of items">
@@ -125,7 +128,75 @@ import { FormsModule } from '@angular/forms';
             Nenhum {{ activeTab === 'services' ? 'serviço' : 'produto' }} cadastrado ainda.
           </div>
         </section>
+
+        <!-- Meu Scizzor Section -->
+        <section class="list-section" *ngIf="activeTab === 'scizzor'">
+          <div class="loading-spinner" *ngIf="isLoading">Carregando itens...</div>
+          
+          <div class="card item-card" *ngFor="let item of scizzorItems">
+            <div class="item-info">
+              <h3>{{ item.name }} <span class="badge">{{ item.type === 'PRODUCT' ? 'Produto' : 'Serviço' }}</span></h3>
+              <p>R$ {{ item.price.toFixed(2).replace('.', ',') }} <span *ngIf="item.type === 'PRODUCT'" class="item-qty"> • {{ item.quantity }} em estoque</span></p>
+            </div>
+            
+            <div class="sale-actions">
+              <div class="qty-control">
+                <button (click)="item.saleQuantity = (item.saleQuantity || 1) - 1; $event.preventDefault()" [disabled]="(item.saleQuantity || 1) <= 1">-</button>
+                <input type="number" [(ngModel)]="item.saleQuantity" (ngModelChange)="item.saleQuantity = $event || 1" min="1">
+                <button (click)="item.saleQuantity = (item.saleQuantity || 1) + 1; $event.preventDefault()">+</button>
+              </div>
+              <button class="add-btn" (click)="confirmSale(item, 'add')">Adicionar Venda</button>
+            </div>
+          </div>
+          
+          <div *ngIf="!isLoading && scizzorItems.length === 0" class="empty-state">
+            Nenhum serviço ou produto disponível.
+          </div>
+        </section>
+
+        <!-- Minhas Vendas Section -->
+        <section class="list-section" *ngIf="activeTab === 'sales'">
+          <div class="loading-spinner" *ngIf="isLoading">Carregando vendas...</div>
+          
+          <div *ngFor="let monthGroup of salesByMonth" class="month-group">
+            <h2 class="month-title">{{ monthGroup.month }}</h2>
+            <div class="card item-card" *ngFor="let sale of monthGroup.sales">
+              <div class="item-info">
+                <h3>{{ sale.itemName }} <span class="badge">{{ sale.itemType === 'PRODUCT' ? 'Produto' : 'Serviço' }}</span></h3>
+                <p>Data: {{ formatSaleDate(sale.saleDate) }}</p>
+              </div>
+              <div class="sale-details">
+                <p>Qtd: <strong>{{ sale.quantity }}</strong></p>
+                <p>Total: <strong>R$ {{ sale.totalPrice.toFixed(2).replace('.', ',') }}</strong></p>
+                <button class="outline delete-btn" style="margin-top: 8px; font-size: 0.8rem; padding: 4px 12px; height: auto;" (click)="confirmSale(sale, 'remove')">Remover</button>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="!isLoading && salesByMonth.length === 0" class="empty-state">
+            Nenhuma venda registrada ainda.
+          </div>
+        </section>
       </main>
+
+      <!-- Modal de Confirmação de Venda -->
+      <div class="modal-overlay" *ngIf="showSaleModal" (click)="cancelSale()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Confirmar Ação</h3>
+          </div>
+          <p>
+            Você está prestes a <strong>{{ saleActionType === 'add' ? 'adicionar' : 'remover' }}</strong> 
+            {{ saleActionType === 'add' ? (itemForSale?.saleQuantity || 1) : itemForSale?.quantity }} venda(s) de "{{ saleActionType === 'add' ? itemForSale?.name : itemForSale?.itemName }}". Deseja continuar?
+          </p>
+          <div class="modal-footer">
+            <button class="outline" (click)="cancelSale()">Cancelar</button>
+            <button class="add-btn" [class.delete-confirm-btn]="saleActionType === 'remove'" (click)="executeSale()" [disabled]="isProcessingSale">
+              {{ isProcessingSale ? 'Aguarde...' : 'Confirmar' }}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Modal de Confirmação de Senha (Perfil) -->
       <div class="modal-overlay" *ngIf="showConfirmPasswordModal" (click)="cancelProfileUpdate()">
@@ -419,11 +490,82 @@ import { FormsModule } from '@angular/forms';
       from { transform: scale(0.9); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
+    .badge {
+      background: #eee;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .sale-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .qty-control {
+      display: flex;
+      align-items: center;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+      height: 42px;
+    }
+    .qty-control button {
+      background: #000;
+      color: #fff;
+      border: none;
+      width: 32px;
+      height: 100%;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .qty-control button:disabled {
+      background: #f5f5f5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .qty-control button:hover:not(:disabled) {
+      background: #333;
+    }
+    .qty-control input {
+      width: 50px;
+      height: 100%;
+      border: none;
+      border-left: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      border-radius: 0;
+    }
+    .month-group {
+      margin-bottom: 24px;
+    }
+    .month-title {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      color: #333;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 4px;
+    }
+    .sale-details p {
+      margin: 4px 0;
+      text-align: right;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
-  activeTab: 'profile' | 'services' | 'products' = 'services';
+  activeTab: 'scizzor' | 'sales' | 'profile' | 'services' | 'products' = 'scizzor';
   items: any[] = [];
+  scizzorItems: any[] = [];
+  salesByMonth: { month: string, sales: any[] }[] = [];
+  
+  showSaleModal = false;
+  saleActionType: 'add' | 'remove' = 'add';
+  itemForSale: any = null;
+  isProcessingSale = false;
+
   newItem: any = { name: '', price: '', quantity: '' };
   isLoading = false;
   isAdding = false;
@@ -442,15 +584,19 @@ export class DashboardComponent implements OnInit {
   constructor(private api: ApiService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
-    this.loadItems();
+    this.loadScizzorItems();
   }
 
-  setTab(tab: 'profile' | 'services' | 'products') {
+  setTab(tab: 'scizzor' | 'sales' | 'profile' | 'services' | 'products') {
     if (this.activeTab !== tab) {
       this.activeTab = tab;
       this.message = '';
       if (tab === 'profile') {
         this.loadProfile();
+      } else if (tab === 'scizzor') {
+        this.loadScizzorItems();
+      } else if (tab === 'sales') {
+        this.loadSales();
       } else {
         this.loadItems();
       }
@@ -693,6 +839,125 @@ export class DashboardComponent implements OnInit {
       this.api.deleteService(itemId).subscribe(observer);
     } else {
       this.api.deleteProduct(itemId).subscribe(observer);
+    }
+  }
+
+  loadScizzorItems() {
+    this.isLoading = true;
+    this.scizzorItems = [];
+    forkJoin({
+      services: this.api.getServices(),
+      products: this.api.getProducts()
+    }).subscribe({
+      next: (res) => {
+        const svcs = res.services.map((s: any) => ({ ...s, type: 'SERVICE', saleQuantity: 1 }));
+        const prods = res.products.map((p: any) => ({ ...p, type: 'PRODUCT', saleQuantity: 1 }));
+        this.scizzorItems = [...svcs, ...prods].sort((a, b) => a.name.localeCompare(b.name));
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        if (err.status === 401 || err.status === 403) {
+          this.router.navigate(['/login']);
+        } else {
+          this.showMessage('Erro ao carregar itens.', 'error');
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadSales() {
+    this.isLoading = true;
+    this.salesByMonth = [];
+    this.api.getSales().subscribe({
+      next: (data: any[]) => {
+        this.isLoading = false;
+        this.groupSalesByMonth(data);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoading = false;
+        this.showMessage('Erro ao carregar vendas.', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  groupSalesByMonth(sales: any[]) {
+    const groups: { [key: string]: any[] } = {};
+    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    
+    sales.forEach(sale => {
+      const date = new Date(sale.saleDate);
+      const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(sale);
+    });
+
+    this.salesByMonth = Object.keys(groups).map(key => ({
+      month: key,
+      sales: groups[key]
+    }));
+  }
+
+  formatSaleDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  confirmSale(item: any, type: 'add' | 'remove') {
+    this.itemForSale = item;
+    this.saleActionType = type;
+    this.showSaleModal = true;
+  }
+
+  cancelSale() {
+    this.showSaleModal = false;
+    this.itemForSale = null;
+  }
+
+  executeSale() {
+    if (!this.itemForSale) return;
+    this.isProcessingSale = true;
+
+    if (this.saleActionType === 'add') {
+      const payload = {
+        itemId: this.itemForSale.id,
+        itemType: this.itemForSale.type,
+        quantity: this.itemForSale.saleQuantity || 1
+      };
+      
+      this.api.createSale(payload).subscribe({
+        next: () => {
+          this.isProcessingSale = false;
+          this.showSaleModal = false;
+          this.showMessage('Venda adicionada!', 'success');
+          this.loadScizzorItems();
+        },
+        error: () => {
+          this.isProcessingSale = false;
+          this.showSaleModal = false;
+          this.showMessage('Erro ao adicionar venda.', 'error');
+        }
+      });
+    } else {
+      this.api.deleteSale(this.itemForSale.id).subscribe({
+        next: () => {
+          this.isProcessingSale = false;
+          this.showSaleModal = false;
+          this.showMessage('Venda removida!', 'success');
+          this.loadSales();
+        },
+        error: () => {
+          this.isProcessingSale = false;
+          this.showSaleModal = false;
+          this.showMessage('Erro ao remover venda.', 'error');
+        }
+      });
     }
   }
 
