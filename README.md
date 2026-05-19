@@ -16,6 +16,17 @@ Você pode rodar o projeto usando Docker Compose.
     *   **Frontend:** [http://localhost:4200](http://localhost:4200)
     *   **Backend:** [http://localhost:8081](http://localhost:8081)
 
+### Parar e Limpar o Projeto
+
+*   **Para parar o projeto (preservando os dados):**
+    ```bash
+    docker-compose down
+    ```
+*   **Para parar o projeto e limpar todos os dados do banco:**
+    ```bash
+    docker-compose down -v
+    ```
+
 ## 🛠️ Tecnologias Utilizadas
 
 *   **Backend:** Java 25 LTS, Spring Boot 4, PostgreSQL.
