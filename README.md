@@ -10,7 +10,7 @@ Você pode rodar o projeto usando Docker Compose.
 
 1.  Na raiz do projeto, execute:
     ```bash
-    docker-compose up --build
+    docker compose up --build
     ```
 2.  Acesse as aplicações nos seguintes endereços:
     *   **Frontend:** [http://localhost:4200](http://localhost:4200)
@@ -20,11 +20,11 @@ Você pode rodar o projeto usando Docker Compose.
 
 *   **Para parar o projeto (preservando os dados):**
     ```bash
-    docker-compose down
+    docker compose stop
     ```
 *   **Para parar o projeto e limpar todos os dados do banco:**
     ```bash
-    docker-compose down -v
+    docker compose down -v
     ```
 
 ## 🛠️ Tecnologias Utilizadas
