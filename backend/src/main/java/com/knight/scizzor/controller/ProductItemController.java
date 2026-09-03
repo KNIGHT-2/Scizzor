@@ -32,9 +32,30 @@ public class ProductItemController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductItem>> getAllProducts(Authentication authentication) {
-        Establishment est = getEstablishment(authentication);
-        return ResponseEntity.ok(repository.findByEstablishmentId(est.getId()));
+    public ResponseEntity<List<ProductItem>> getAllProducts(
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Long establishmentId,
+            Authentication authentication) {
+        
+        if (username != null && !username.isBlank()) {
+            String clean = username.startsWith("@") ? username.substring(1) : username;
+            Optional<Establishment> est = establishmentRepository.findByUsername(clean);
+            if (est.isPresent()) {
+                return ResponseEntity.ok(repository.findByEstablishmentId(est.get().getId()));
+            }
+            return ResponseEntity.notFound().build();
+        }
+
+        if (establishmentId != null) {
+            return ResponseEntity.ok(repository.findByEstablishmentId(establishmentId));
+        }
+
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
+            Establishment est = getEstablishment(authentication);
+            return ResponseEntity.ok(repository.findByEstablishmentId(est.getId()));
+        }
+
+        return ResponseEntity.badRequest().build();
     }
 
     @PostMapping

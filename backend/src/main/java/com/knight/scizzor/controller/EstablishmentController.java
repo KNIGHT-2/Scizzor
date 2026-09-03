@@ -27,7 +27,15 @@ public class EstablishmentController {
     public ResponseEntity<ProfileResponseDto> getProfile(Authentication authentication) {
         String email = authentication.getName();
         Establishment est = repository.findByEmail(email).orElseThrow();
-        return ResponseEntity.ok(new ProfileResponseDto(est.getName(), est.getUsername(), est.getEmail()));
+        return ResponseEntity.ok(new ProfileResponseDto(
+                est.getName(),
+                est.getUsername(),
+                est.getEmail(),
+                est.getLogoUrl(),
+                est.getBio(),
+                est.getPhone(),
+                est.getAddress()
+        ));
     }
 
     @PutMapping
@@ -43,6 +51,22 @@ public class EstablishmentController {
         // Atualização parcial dos dados
         if (updateDto.getName() != null && !updateDto.getName().isBlank()) {
             est.setName(updateDto.getName());
+        }
+
+        if (updateDto.getLogoUrl() != null) {
+            est.setLogoUrl(updateDto.getLogoUrl());
+        }
+
+        if (updateDto.getBio() != null) {
+            est.setBio(updateDto.getBio());
+        }
+
+        if (updateDto.getPhone() != null) {
+            est.setPhone(updateDto.getPhone());
+        }
+
+        if (updateDto.getAddress() != null) {
+            est.setAddress(updateDto.getAddress());
         }
 
         if (updateDto.getUsername() != null && !updateDto.getUsername().isBlank()) {

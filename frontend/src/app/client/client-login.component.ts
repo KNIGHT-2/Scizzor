@@ -1,11 +1,11 @@
-import { Component } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../api.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-client-login',
   standalone: true,
   imports: [FormsModule, CommonModule, RouterLink],
   template: `
@@ -13,16 +13,16 @@ import { CommonModule } from '@angular/common';
       <div class="card auth-card">
         <div class="auth-header">
           <img src="/assets/logo.png" alt="Scizzor Logo" class="logo-img">
-          <span class="role-badge">Portal do Salão</span>
-          <h2>Bem-vindo de volta</h2>
+          <span class="role-badge">Área do Cliente</span>
+          <h2>Acesse sua conta</h2>
         </div>
         
         <form (ngSubmit)="onSubmit()">
           <label for="email">E-mail</label>
-          <input type="email" id="email" [(ngModel)]="email" name="email" required>
+          <input type="email" id="email" [(ngModel)]="email" name="email" required placeholder="seu@email.com">
           
           <label for="password">Senha</label>
-          <input type="password" id="password" [(ngModel)]="password" name="password" required>
+          <input type="password" id="password" [(ngModel)]="password" name="password" required placeholder="••••••••">
           
           <div *ngIf="error" class="error-msg">{{ error }}</div>
           
@@ -32,9 +32,9 @@ import { CommonModule } from '@angular/common';
         </form>
         
         <div class="auth-footer">
-          <p>Não tem uma conta parceira? <a routerLink="/register">Cadastre sua barbearia</a></p>
+          <p>Ainda não tem conta? <a [routerLink]="['/client/register']" [queryParams]="returnUrl ? { returnUrl: returnUrl } : null">Cadastre-se</a></p>
           <div class="divider"></div>
-          <p><a routerLink="/client/login" class="client-link">É um cliente final? Faça login aqui</a></p>
+          <p><a routerLink="/login" class="partner-link">É proprietário de salão? Acesse aqui</a></p>
           <p><a routerLink="/">Voltar para o Início</a></p>
         </div>
       </div>
@@ -51,24 +51,24 @@ import { CommonModule } from '@angular/common';
     }
     .auth-card {
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       padding: 40px;
     }
     .auth-header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
     .role-badge {
       display: inline-block;
-      margin-top: 10px;
-      margin-bottom: 6px;
+      margin-top: 12px;
+      margin-bottom: 8px;
       background: #000;
       color: #fff;
       font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 20px;
     }
     .auth-header h2 {
@@ -99,40 +99,47 @@ import { CommonModule } from '@angular/common';
       background: #eee;
       margin: 16px 0;
     }
-    .client-link {
+    .partner-link {
       color: #555;
       font-weight: 500;
     }
   `]
 })
-export class LoginComponent {
+export class ClientLoginComponent implements OnInit {
   email = '';
   password = '';
   error = '';
   isLoading = false;
+  returnUrl: string | null = null;
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(
+    private api: ApiService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit() {
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || null;
+  }
 
   onSubmit() {
     this.error = '';
     this.isLoading = true;
 
-    this.api.login({ email: this.email, password: this.password }).subscribe({
+    this.api.loginClient({ email: this.email, password: this.password }).subscribe({
       next: (res) => {
         this.isLoading = false;
         this.api.setSession({
           token: res.token,
-          role: res.role || 'ROLE_SALON',
-          username: res.username,
+          role: res.role,
           name: res.name,
           email: res.email
         });
 
-        // Redirecionamento condicional pós-login
-        if (res.role === 'ROLE_CLIENT') {
-          this.router.navigate(['/client/dashboard']);
+        if (this.returnUrl) {
+          this.router.navigateByUrl(this.returnUrl);
         } else {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/client/dashboard']);
         }
       },
       error: (err) => {

@@ -10,7 +10,8 @@ import { RouterLink } from '@angular/router';
       <div class="container header-content">
         <img src="/assets/logo.png" alt="Scizzor Logo" class="logo-img">
         <nav>
-          <a routerLink="/login" class="nav-link">Entrar</a>
+          <a routerLink="/client/login" class="nav-link client-nav-link">Sou Cliente</a>
+          <a routerLink="/login" class="nav-link">Portal Salão</a>
           <button routerLink="/register">Cadastrar Salão</button>
         </nav>
       </div>

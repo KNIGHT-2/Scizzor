@@ -4,6 +4,10 @@ public class ProfileUpdateDto {
     private String name;
     private String username;
     private String email;
+    private String logoUrl;
+    private String bio;
+    private String phone;
+    private String address;
     private String newPassword;
     private String currentPassword;
 
@@ -16,6 +20,18 @@ public class ProfileUpdateDto {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getLogoUrl() { return logoUrl; }
+    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
     public String getNewPassword() { return newPassword; }
     public void setNewPassword(String newPassword) { this.newPassword = newPassword; }

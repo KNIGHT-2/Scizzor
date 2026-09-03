@@ -14,6 +14,8 @@ public class ItemDto {
 
     private Integer quantity;
 
+    private Integer durationMinutes;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -22,4 +24,7 @@ public class ItemDto {
 
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
 }

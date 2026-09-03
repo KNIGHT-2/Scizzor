@@ -1,37 +1,35 @@
 package com.knight.scizzor.dto;
 
-public class ProfileResponseDto {
+import java.util.List;
+
+public class PublicSalonDto {
     private String name;
     private String username;
-    private String email;
     private String logoUrl;
     private String bio;
     private String phone;
     private String address;
+    private List<PublicServiceDto> services;
+    private List<PublicProductDto> products;
 
-    public ProfileResponseDto(String name, String username, String email) {
-        this(name, username, email, null, null, null, null);
-    }
+    public PublicSalonDto() {}
 
-    public ProfileResponseDto(String name, String username, String email, String logoUrl, String bio, String phone, String address) {
+    public PublicSalonDto(String name, String username, String logoUrl, String bio, String phone, String address, List<PublicServiceDto> services, List<PublicProductDto> products) {
         this.name = name;
         this.username = username;
-        this.email = email;
         this.logoUrl = logoUrl;
         this.bio = bio;
         this.phone = phone;
         this.address = address;
+        this.services = services;
+        this.products = products;
     }
 
-    // Getters and Setters
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
 
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
@@ -44,4 +42,10 @@ public class ProfileResponseDto {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public List<PublicServiceDto> getServices() { return services; }
+    public void setServices(List<PublicServiceDto> services) { this.services = services; }
+
+    public List<PublicProductDto> getProducts() { return products; }
+    public void setProducts(List<PublicProductDto> products) { this.products = products; }
 }

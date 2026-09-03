@@ -16,6 +16,9 @@ public class ServiceItem {
     @Column(nullable = false)
     private Double price;
 
+    @Column(name = "duration_minutes", nullable = false)
+    private Integer durationMinutes = 30;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "establishment_id", nullable = false)
     @JsonIgnore
@@ -29,6 +32,9 @@ public class ServiceItem {
 
     public Double getPrice() { return price; }
     public void setPrice(Double price) { this.price = price; }
+
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
 
     public Establishment getEstablishment() { return establishment; }
     public void setEstablishment(Establishment establishment) { this.establishment = establishment; }

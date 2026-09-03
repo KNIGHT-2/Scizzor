@@ -47,8 +47,31 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
+    }
+
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", Long.class));
+    }
+
+    public String extractName(String token) {
+        return extractClaim(token, claims -> claims.get("name", String.class));
+    }
+
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        if (userDetails.getAuthorities() != null && !userDetails.getAuthorities().isEmpty()) {
+            claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
+        }
+        return createToken(claims, userDetails.getUsername());
+    }
+
+    public String generateToken(UserDetails userDetails, String role, Long userId, String name) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        claims.put("userId", userId);
+        claims.put("name", name);
         return createToken(claims, userDetails.getUsername());
     }
 

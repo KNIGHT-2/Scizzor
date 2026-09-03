@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +8,7 @@ import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="dash-layout">
       <aside class="sidebar">
@@ -35,6 +35,13 @@ import { forkJoin } from 'rxjs';
         <!-- Profile Section -->
         <section class="profile-section" *ngIf="activeTab === 'profile'">
           <div class="card profile-card">
+            <div class="public-preview-banner" *ngIf="profileData.username">
+              <span class="preview-text">Seu perfil público está disponível em:</span>
+              <a [routerLink]="['/@' + profileData.username]" target="_blank" class="preview-link">
+                /@{{ profileData.username }} ↗
+              </a>
+            </div>
+
             <div class="profile-form">
               <div class="input-group">
                 <label>Nome do Estabelecimento</label>
@@ -50,6 +57,26 @@ import { forkJoin } from 'rxjs';
               <div class="input-group">
                 <label>E-mail</label>
                 <input type="email" [(ngModel)]="editProfileData.email" placeholder="E-mail">
+              </div>
+
+              <div class="input-group">
+                <label>URL do Logo / Foto de Perfil</label>
+                <input type="text" [(ngModel)]="editProfileData.logoUrl" placeholder="https://exemplo.com/logo.png">
+              </div>
+
+              <div class="input-group">
+                <label>Telefone / WhatsApp</label>
+                <input type="text" [(ngModel)]="editProfileData.phone" placeholder="(11) 99999-9999">
+              </div>
+
+              <div class="input-group">
+                <label>Endereço Completo</label>
+                <input type="text" [(ngModel)]="editProfileData.address" placeholder="Rua, Número, Bairro, Cidade">
+              </div>
+
+              <div class="input-group">
+                <label>Bio / Descrição do Estabelecimento</label>
+                <textarea [(ngModel)]="editProfileData.bio" rows="3" placeholder="Conte aos seus clientes sobre sua barbearia..."></textarea>
               </div>
               
               <div class="divider"></div>
@@ -87,6 +114,10 @@ import { forkJoin } from 'rxjs';
                 <input type="text" [(ngModel)]="newItem.price" placeholder="0,00" [disabled]="isAdding" (keyup.enter)="addItem()">
               </div>
             </div>
+            <div class="input-group" *ngIf="activeTab === 'services'" style="flex: 0 0 130px;">
+              <label>Duração (min)</label>
+              <input type="number" [(ngModel)]="newItem.durationMinutes" placeholder="30" [disabled]="isAdding" (keyup.enter)="addItem()">
+            </div>
             <div class="input-group" *ngIf="activeTab === 'products'" style="flex: 0 0 100px;">
               <label>Quantidade</label>
               <input type="number" [(ngModel)]="newItem.quantity" placeholder="0" [disabled]="isAdding" (keyup.enter)="addItem()">
@@ -108,12 +139,17 @@ import { forkJoin } from 'rxjs';
           <div class="card item-card" *ngFor="let item of items">
             <div *ngIf="!item.isEditing" class="item-info">
               <h3>{{ item.name }}</h3>
-              <p>R$ {{ item.price.toFixed(2).replace('.', ',') }} <span *ngIf="activeTab === 'products'" class="item-qty"> • {{ item.quantity }} unidades</span></p>
+              <p>
+                R$ {{ item.price.toFixed(2).replace('.', ',') }}
+                <span *ngIf="activeTab === 'services'" class="item-qty"> • {{ item.durationMinutes || 30 }} min</span>
+                <span *ngIf="activeTab === 'products'" class="item-qty"> • {{ item.quantity }} unidades</span>
+              </p>
             </div>
             
             <div *ngIf="item.isEditing" class="item-edit">
               <input type="text" [(ngModel)]="item.editName">
               <input type="text" [(ngModel)]="item.editPrice" placeholder="0,00">
+              <input type="number" *ngIf="activeTab === 'services'" [(ngModel)]="item.editDurationMinutes" placeholder="Min" style="flex: 0 0 80px;">
               <input type="number" *ngIf="activeTab === 'products'" [(ngModel)]="item.editQuantity" placeholder="Qtd" style="flex: 0 0 80px;">
             </div>
 
@@ -396,6 +432,26 @@ import { forkJoin } from 'rxjs';
     }
     
     /* Profile Styles */
+    .public-preview-banner {
+      background: #f0f7ff;
+      border: 1px solid #cce3ff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    .preview-text {
+      color: #0056b3;
+      font-weight: 500;
+    }
+    .preview-link {
+      color: #000;
+      font-weight: 700;
+      text-decoration: underline;
+    }
     .profile-card {
       max-width: 600px;
       padding: 32px;
@@ -566,7 +622,7 @@ export class DashboardComponent implements OnInit {
   itemForSale: any = null;
   isProcessingSale = false;
 
-  newItem: any = { name: '', price: '', quantity: '' };
+  newItem: any = { name: '', price: '', quantity: '', durationMinutes: 30 };
   isLoading = false;
   isAdding = false;
   message = '';
@@ -575,8 +631,8 @@ export class DashboardComponent implements OnInit {
   itemToDelete: any = null;
 
   // Profile Data
-  profileData = { name: '', username: '', email: '' };
-  editProfileData = { name: '', username: '', email: '', newPassword: '' };
+  profileData: any = { name: '', username: '', email: '', logoUrl: '', bio: '', phone: '', address: '' };
+  editProfileData: any = { name: '', username: '', email: '', logoUrl: '', bio: '', phone: '', address: '', newPassword: '' };
   isSavingProfile = false;
   showConfirmPasswordModal = false;
   currentPasswordConfirm = '';
@@ -735,6 +791,8 @@ export class DashboardComponent implements OnInit {
 
     if (this.activeTab === 'products') {
       itemToCreate.quantity = parseInt(String(this.newItem.quantity)) || 0;
+    } else if (this.activeTab === 'services') {
+      itemToCreate.durationMinutes = parseInt(String(this.newItem.durationMinutes)) || 30;
     }
 
     this.isAdding = true;
@@ -743,7 +801,7 @@ export class DashboardComponent implements OnInit {
     const observer = {
       next: () => {
         this.isAdding = false;
-        this.newItem = { name: '', price: '', quantity: '' };
+        this.newItem = { name: '', price: '', quantity: '', durationMinutes: 30 };
         this.showMessage('Item adicionado com sucesso!', 'success');
         this.loadItems();
         this.cdr.detectChanges();
@@ -770,6 +828,8 @@ export class DashboardComponent implements OnInit {
     item.editPrice = item.price.toString().replace('.', ',');
     if (this.activeTab === 'products') {
       item.editQuantity = item.quantity;
+    } else if (this.activeTab === 'services') {
+      item.editDurationMinutes = item.durationMinutes || 30;
     }
   }
 
@@ -789,6 +849,9 @@ export class DashboardComponent implements OnInit {
     const data: any = { name: item.editName, price: priceNum };
     if (quantityNum !== undefined) {
       data.quantity = quantityNum;
+    }
+    if (this.activeTab === 'services' && item.editDurationMinutes !== undefined) {
+      data.durationMinutes = parseInt(String(item.editDurationMinutes)) || 30;
     }
 
     const observer = {

@@ -30,9 +30,30 @@ public class ServiceItemController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ServiceItem>> getAllServices(Authentication authentication) {
-        Establishment est = getEstablishment(authentication);
-        return ResponseEntity.ok(repository.findByEstablishmentId(est.getId()));
+    public ResponseEntity<List<ServiceItem>> getAllServices(
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Long establishmentId,
+            Authentication authentication) {
+        
+        if (username != null && !username.isBlank()) {
+            String clean = username.startsWith("@") ? username.substring(1) : username;
+            Optional<Establishment> est = establishmentRepository.findByUsername(clean);
+            if (est.isPresent()) {
+                return ResponseEntity.ok(repository.findByEstablishmentId(est.get().getId()));
+            }
+            return ResponseEntity.notFound().build();
+        }
+
+        if (establishmentId != null) {
+            return ResponseEntity.ok(repository.findByEstablishmentId(establishmentId));
+        }
+
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
+            Establishment est = getEstablishment(authentication);
+            return ResponseEntity.ok(repository.findByEstablishmentId(est.getId()));
+        }
+
+        return ResponseEntity.badRequest().build();
     }
 
     @PostMapping
@@ -41,6 +62,7 @@ public class ServiceItemController {
         ServiceItem item = new ServiceItem();
         item.setName(itemDto.getName());
         item.setPrice(itemDto.getPrice());
+        item.setDurationMinutes(itemDto.getDurationMinutes() != null ? itemDto.getDurationMinutes() : 30);
         item.setEstablishment(est);
         return ResponseEntity.ok(repository.save(item));
     }
@@ -54,6 +76,9 @@ public class ServiceItemController {
             ServiceItem item = optionalItem.get();
             item.setName(itemDto.getName());
             item.setPrice(itemDto.getPrice());
+            if (itemDto.getDurationMinutes() != null) {
+                item.setDurationMinutes(itemDto.getDurationMinutes());
+            }
             return ResponseEntity.ok(repository.save(item));
         }
         return ResponseEntity.status(403).body("Not authorized or not found.");

@@ -35,6 +35,13 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/public/**", "/api/salons/**", "/@{username}").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/services/**", "/api/products/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/services/**", "/api/products/**").hasRole("SALON")
+                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/services/**", "/api/products/**").hasRole("SALON")
+                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/services/**", "/api/products/**").hasRole("SALON")
+                .requestMatchers("/api/sales/**", "/api/profile/**").hasRole("SALON")
+                .requestMatchers("/api/client/**").hasRole("CLIENT")
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

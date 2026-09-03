@@ -22,6 +22,18 @@ public class Establishment {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "logo_url")
+    private String logoUrl;
+
+    @Column(length = 500)
+    private String bio;
+
+    @Column
+    private String phone;
+
+    @Column
+    private String address;
+
     @OneToMany(mappedBy = "establishment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ServiceItem> services;
 
@@ -42,6 +54,18 @@ public class Establishment {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getLogoUrl() { return logoUrl; }
+    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
     public List<ServiceItem> getServices() { return services; }
     public void setServices(List<ServiceItem> services) { this.services = services; }
